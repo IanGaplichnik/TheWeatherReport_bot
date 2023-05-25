@@ -23,5 +23,5 @@ type GeocodingClient struct {
 
 const (
 	direct  string = "geo/1.0/direct"
-	reverse string = "data/2.5/weather"
+	reverse string = "geo/1.0/reverse"
 )

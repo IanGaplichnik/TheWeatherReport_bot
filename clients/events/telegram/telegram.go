@@ -67,9 +67,6 @@ func (p *Processor) Process(event events.Event) error {
 		return e.Wrap("can't process message", ErrUnknownEventType)
 	}
 }
-func (p *Processor) processLocation(event events.Event) error {
-	return nil
-}
 
 func (p *Processor) processMessage(event events.Event) error {
 	meta, err := meta(event)
@@ -80,6 +77,38 @@ func (p *Processor) processMessage(event events.Event) error {
 	if err := p.doCmd(context.Background(), event.Text, meta.ChatID, meta.Username); err != nil {
 		return e.Wrap("can't process message", err)
 	}
+	return nil
+}
+
+func (p *Processor) processLocation(event events.Event) error {
+	meta, err := meta(event)
+	if err != nil {
+		return e.Wrap("can't process location", err)
+	}
+
+	if err := p.locationOperations(context.Background(), event.Location, meta.ChatID, meta.Username); err != nil {
+		return e.Wrap("can't perform location operations", err)
+	}
+	return nil
+}
+
+func (p *Processor) locationOperations(ctx context.Context, location *events.Coordinates, chatID int, username string) error {
+	cities, err := p.geocoding.FetchCityWithCoord(location.Latitude, location.Longitude)
+
+	if err != nil {
+		return e.Wrap("can't fetch city with coordinates", err)
+	}
+
+	if len(cities) > 0 {
+		userdata := storage.Userdata{
+			UserName: username,
+			ChatId:   chatID,
+			City:     cities[0].CityName,
+		}
+
+		p.saveCityToDB(ctx, userdata)
+	}
+
 	return nil
 }
 
@@ -98,7 +127,7 @@ func event(upd tgClient.Update) events.Event {
 		Location: fetchLocation(upd),
 	}
 
-	if res.Type == events.Message {
+	if res.Type == events.Message || res.Type == events.Location {
 		res.Meta = Meta{
 			ChatID:   upd.Message.Chat.ID,
 			Username: upd.Message.From.Username,

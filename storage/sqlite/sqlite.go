@@ -70,12 +70,22 @@ func (ds *DataStorage) Init(ctx context.Context) error {
 	return nil
 }
 
-func (ds *DataStorage) ReplaceCity(ctx context.Context, userData storage.Userdata) error {
-	if err := ds.Remove(ctx, storage.Userdata{}); err != nil {
-		return e.Wrap("can't delete city", err)
+func (ds *DataStorage) RetrieveCity(ctx context.Context, userData storage.Userdata) (string, error) {
+	exists, err := ds.Exists(ctx, userData)
+	if err != nil {
+		return "", fmt.Errorf("can't check if page exists %w", err)
 	}
-	if err := ds.Save(ctx, &userData); err != nil {
-		return e.Wrap("can't save city", err)
+	if exists {
+		q := `SELECT city FROM pages WHERE user_name = ?`
+
+		var result string
+
+		err := ds.db.QueryRowContext(ctx, q, userData.UserName).Scan(&result)
+		if err != nil {
+			return "", e.Wrap("can't prepare sql query", err)
+		}
+
+		return result, nil
 	}
-	return nil
+	return "", nil
 }

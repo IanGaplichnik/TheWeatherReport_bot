@@ -34,10 +34,35 @@ func (p *Processor) doCmd(ctx context.Context, text string, chatID int, username
 	case StartCmd:
 		return p.tg.SendMessage(chatID, helloMsg)
 	// case GetWeather: //TODO
+	// case CheckRain:
+	case CurrentCity:
+		return p.checkCurrentCity(ctx, chatID, username)
 	default:
 		return p.tg.SendMessage(chatID, unknownCommandMsg)
 	}
+}
 
+func (p *Processor) checkCurrentCity(ctx context.Context, chatId int, username string) error {
+	userdata := storage.Userdata{
+		ChatId:   chatId,
+		UserName: username,
+	}
+	exists, err := p.storage.Exists(ctx, userdata)
+	if err != nil {
+		e.Wrap("can't check if user exists", err)
+	}
+
+	if !exists {
+		return p.tg.SendMessage(chatId, "No city is set :(")
+	}
+
+	cityname, err := p.storage.RetrieveCity(ctx, userdata)
+	if err != nil {
+		return e.Wrap("can't retreive city", err)
+	}
+
+	p.tg.SendMessage(chatId, "Your city is "+cityname)
+	return nil
 }
 
 func (p *Processor) setCity(ctx context.Context, text string, chatID int, username string) error {
@@ -54,18 +79,23 @@ func (p *Processor) setCity(ctx context.Context, text string, chatID int, userna
 
 	userdata := storage.Userdata{
 		UserName: username,
+		ChatId:   chatID,
 		City:     cities[0].CityName,
 	}
 
 	if len(cities) == 1 {
 		if userdata.City != text {
-			p.tg.SendMessage(chatID, msgNoCity)
+			if err := p.tg.SendMessage(chatID, msgNoCity); err != nil {
+				return e.Wrap("can't send message", err)
+			}
 			return nil
 		}
-		p.saveCityToDB(ctx, userdata)
-		message := fmt.Sprintf("City of %s is succesfully set!", userdata.City)
 
-		p.tg.SendMessage(chatID, message)
+		fmt.Print("HEREEEE")
+		if err := p.saveCityToDB(ctx, userdata); err != nil {
+			return e.Wrap("can't save city to db", err)
+		}
+		fmt.Print("HEREEEE2")
 	}
 
 	return nil
@@ -87,6 +117,11 @@ func (p *Processor) saveCityToDB(ctx context.Context, userdata storage.Userdata)
 	err = p.storage.Save(ctx, &userdata)
 	if err != nil {
 		return e.Wrap("can't save userdata to storage", err)
+	}
+
+	message := fmt.Sprintf("City of %s is succesfully set!🙌\nYou can choose the next action from the menu.\nSend a message or a location to set a new city", userdata.City)
+	if err := p.tg.SendMessage(userdata.ChatId, message); err != nil {
+		return e.Wrap("can't send message", err)
 	}
 	return nil
 }
