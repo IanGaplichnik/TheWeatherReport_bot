@@ -1,4 +1,4 @@
-package geocoding
+package gcClient
 
 import (
 	"encoding/json"
@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"path"
 
+	"main.go/clients/events"
 	"main.go/lib/e"
 )
 
@@ -19,7 +20,40 @@ func New(host string, token string) *GeocodingClient {
 	}
 }
 
-func (gc *GeocodingClient) GeoCoordinates(city string) ([]CityStats, error) {
+func (gc *GeocodingClient) FetchCity(city string) ([]events.Weatherdata, error) {
+	cities, err := gc.geoCoordinates(city)
+	if err != nil {
+		return nil, e.Wrap("can't fetch city: %w", err)
+	}
+
+	var citiesWeather []events.Weatherdata
+	for _, city := range cities {
+		citiesWeather = append(citiesWeather, weather(city))
+	}
+	return citiesWeather, nil
+}
+
+func weather(city CityStats) events.Weatherdata {
+	return events.Weatherdata{
+		CityName:  getCityname(city),
+		Latitude:  getLatitude(city),
+		Longitude: getLongitude(city),
+	}
+}
+
+func getCityname(city CityStats) string {
+	return city.Name
+}
+
+func getLongitude(city CityStats) float32 {
+	return city.Longitude
+}
+
+func getLatitude(city CityStats) float32 {
+	return city.Latitude
+}
+
+func (gc *GeocodingClient) geoCoordinates(city string) ([]CityStats, error) {
 	query := url.Values{}
 	query.Add("appid", gc.token)
 	query.Add("q", city)

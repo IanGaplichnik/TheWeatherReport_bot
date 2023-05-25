@@ -1,11 +1,13 @@
 package telegram
 
 const helpMsg = `
-1. /setcity <city_name>: Set your city for weather updates 🏙️.
-Example: /setcity London
+1. /getweather: Get the current weather in your city 🌦️
 
-2. /getweather: Get the current weather in your city 🌦️.
-Example: /getweather
+2. /help: Prints a help message
+
+3. /checkrain: Get a short message, stating if it's going to rain
+
+4. /currentcity: Prints your currently set city
 
 Note:
 - Make sure to set your city using /setcity before using /getweather or /checkrain.
@@ -17,4 +19,5 @@ const (
 	unknownCommandMsg = "Oh no! This command is not supported! 🤔"
 	cityNotSetMsg     = "Uh oh! You need to set the city first :)"
 	citySetMsg        = "You've succesfully set a city! 🏙️"
+	msgNoCity         = "Couldn't find such city :("
 )

@@ -5,7 +5,7 @@ import (
 	"errors"
 
 	"main.go/clients/events"
-	"main.go/clients/geocoding"
+	"main.go/clients/gcClient"
 	"main.go/clients/tgClient"
 	"main.go/lib/e"
 	"main.go/storage"
@@ -13,7 +13,7 @@ import (
 
 type Processor struct {
 	tg        *tgClient.TgClient
-	geocoding *geocoding.GeocodingClient
+	geocoding *gcClient.GeocodingClient
 	offset    int
 	storage   storage.Storage
 }
@@ -28,7 +28,7 @@ var (
 	ErrUnknownMetaType  = errors.New("meta mype unknown")
 )
 
-func New(client *tgClient.TgClient, storage storage.Storage, geocoding *geocoding.GeocodingClient) *Processor {
+func New(client *tgClient.TgClient, storage storage.Storage, geocoding *gcClient.GeocodingClient) *Processor {
 	return &Processor{
 		tg:        client,
 		storage:   storage,
@@ -68,7 +68,7 @@ func (p *Processor) Process(event events.Event) error {
 	}
 }
 func (p *Processor) processLocation(event events.Event) error {
-
+	return nil
 }
 
 func (p *Processor) processMessage(event events.Event) error {
@@ -128,11 +128,10 @@ func fetchText(upd tgClient.Update) string {
 }
 
 func fetchType(upd tgClient.Update) events.Type {
-	if upd.Message.Location != nil {
-		return events.Location
-	}
 	if upd.Message == nil {
 		return events.Unknown
+	} else if upd.Message.Location != nil {
+		return events.Location
 	}
 	return events.Message
 }

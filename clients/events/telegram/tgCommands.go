@@ -14,7 +14,6 @@ import (
 const (
 	HelpCmd     = "/help"
 	StartCmd    = "/start"
-	SetCity     = "/setcity"
 	GetWeather  = "/getweather"
 	CheckRain   = "/checkrain"
 	CurrentCity = "/currentcity"
@@ -42,28 +41,30 @@ func (p *Processor) doCmd(ctx context.Context, text string, chatID int, username
 }
 
 func (p *Processor) setCity(ctx context.Context, text string, chatID int, username string) error {
-	cities, err := p.geocoding.GeoCoordinates(text)
+
+	cities, err := p.geocoding.FetchCity(text)
 	if err != nil {
 		return e.Wrap("error occured getting the city", err)
 	}
 
 	if len(cities) == 0 {
-		p.tg.SendMessage(chatID, "Couldn't find such city!")
+		p.tg.SendMessage(chatID, msgNoCity)
 		return nil
 	}
 
 	userdata := storage.Userdata{
 		UserName: username,
-		City:     cities[0].Name,
+		City:     cities[0].CityName,
 	}
 
 	if len(cities) == 1 {
 		if userdata.City != text {
-			p.tg.SendMessage(chatID, "Couldn't find such city!")
+			p.tg.SendMessage(chatID, msgNoCity)
 			return nil
 		}
 		p.saveCityToDB(ctx, userdata)
-		message := fmt.Sprintf("City %s is succesfully set!", userdata.City)
+		message := fmt.Sprintf("City of %s is succesfully set!", userdata.City)
+
 		p.tg.SendMessage(chatID, message)
 	}
 

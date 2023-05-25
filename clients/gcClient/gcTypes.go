@@ -1,4 +1,4 @@
-package geocoding
+package gcClient
 
 import (
 	"net/http"
@@ -12,7 +12,6 @@ type CityStats struct {
 	Name      string  `json:"name"`
 	Latitude  float32 `json:"lat"`
 	Longitude float32 `json:"lon"`
-	Country   string  `json:"country"`
 }
 
 type GeocodingClient struct {

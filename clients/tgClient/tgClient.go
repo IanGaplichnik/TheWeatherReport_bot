@@ -16,37 +16,6 @@ const (
 	getUpdatesMethod  = "getUpdates"
 )
 
-func newBasePath(token string) string {
-	return "bot" + token
-}
-
-func (c *TgClient) doRequest(methodFunction string, query url.Values) (data []byte, err error) {
-	u := url.URL{
-		Scheme:   "https",
-		Host:     c.host,
-		Path:     path.Join(c.basePath, methodFunction),
-		RawQuery: query.Encode(),
-	}
-
-	req, err := http.NewRequest(http.MethodGet, u.String(), nil)
-	if err != nil {
-		return nil, e.Wrap("can't build a request", err)
-	}
-
-	resp, err := c.client.Do(req)
-	if err != nil {
-		return nil, e.Wrap("can't client.Do request", err)
-	}
-	defer func() { _ = resp.Body.Close() }()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, e.Wrap("can't ReadAll", err)
-	}
-
-	return body, err
-}
-
 func (c *TgClient) Updates(offset int, limit int) (updates []Update, err error) {
 	defer func() { err = e.WrapIfError("can't get updates", err) }()
 
@@ -87,4 +56,35 @@ func New(host, token string) *TgClient {
 		basePath: newBasePath(token),
 		client:   http.Client{},
 	}
+}
+
+func newBasePath(token string) string {
+	return "bot" + token
+}
+
+func (c *TgClient) doRequest(methodFunction string, query url.Values) (data []byte, err error) {
+	u := url.URL{
+		Scheme:   "https",
+		Host:     c.host,
+		Path:     path.Join(c.basePath, methodFunction),
+		RawQuery: query.Encode(),
+	}
+
+	req, err := http.NewRequest(http.MethodGet, u.String(), nil)
+	if err != nil {
+		return nil, e.Wrap("can't build a request", err)
+	}
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, e.Wrap("can't client.Do request", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, e.Wrap("can't ReadAll", err)
+	}
+
+	return body, err
 }

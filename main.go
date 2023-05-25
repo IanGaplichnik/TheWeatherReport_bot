@@ -6,7 +6,7 @@ import (
 
 	_ "github.com/mattn/go-sqlite3"
 	"main.go/clients/events/telegram"
-	"main.go/clients/geocoding"
+	"main.go/clients/gcClient"
 	"main.go/clients/tgClient"
 	"main.go/consumer/eventConsumer"
 	"main.go/storage/sqlite"
@@ -34,7 +34,7 @@ func main() {
 
 	}
 
-	geocodingClient := geocoding.New(geoClientHost, tokens.GeocodingToken())
+	geocodingClient := gcClient.New(geoClientHost, tokens.GeocodingToken())
 
 	eventsProcessor := telegram.New(
 		tgClient.New(tgBotHost, tokens.TgToken()),

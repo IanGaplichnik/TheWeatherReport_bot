@@ -27,3 +27,9 @@ type Coordinates struct {
 	Longitude float32
 	Latitude  float32
 }
+
+type Weatherdata struct {
+	CityName  string
+	Latitude  float32
+	Longitude float32
+}
