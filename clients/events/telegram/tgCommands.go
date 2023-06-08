@@ -12,11 +12,10 @@ import (
 )
 
 const (
-	HelpCmd     = "/help"
-	StartCmd    = "/start"
-	GetWeather  = "/getweather"
-	CheckRain   = "/checkrain"
-	CurrentCity = "/currentcity"
+	HelpCmd      = "/help"
+	StartCmd     = "/start"
+	CheckWeather = "/checkweather"
+	CurrentCity  = "/currentcity"
 )
 
 func (p *Processor) doCmd(ctx context.Context, text string, chatID int, username string) error {
@@ -33,8 +32,8 @@ func (p *Processor) doCmd(ctx context.Context, text string, chatID int, username
 		return p.tg.SendMessage(chatID, helpMsg)
 	case StartCmd:
 		return p.tg.SendMessage(chatID, helloMsg)
-	// case GetWeather: //TODO
-	// case CheckRain:
+	case CheckWeather:
+		return p.checkWeather(ctx, chatID, username)
 	case CurrentCity:
 		return p.checkCurrentCity(ctx, chatID, username)
 	default:
@@ -42,23 +41,47 @@ func (p *Processor) doCmd(ctx context.Context, text string, chatID int, username
 	}
 }
 
+func (p *Processor) checkWeather(ctx context.Context, chatID int, username string) error {
+	userdata := storage.Userdata{
+		UserName: username,
+		ChatId:   chatID,
+	}
+
+	city, err := p.storage.RetrieveCity(ctx, userdata)
+	if err != nil {
+		return e.Wrap("can't check if it'll rain", err)
+	}
+	if len(city) == 0 {
+		return p.tg.SendMessage(chatID, "You need to set the city first :)")
+	}
+
+	coord, err := p.geocoding.FetchCity(city)
+	if err != nil {
+		return e.Wrap("can't check if rain", err)
+	}
+
+	message, err := p.geocoding.FetchWeather(coord[0].Latitude, coord[0].Longitude)
+	if err != nil {
+		return e.Wrap("can't check if rain", err)
+	}
+
+	p.tg.SendMessage(chatID, message)
+
+	return nil
+}
+
 func (p *Processor) checkCurrentCity(ctx context.Context, chatId int, username string) error {
 	userdata := storage.Userdata{
 		ChatId:   chatId,
 		UserName: username,
 	}
-	exists, err := p.storage.Exists(ctx, userdata)
-	if err != nil {
-		e.Wrap("can't check if user exists", err)
-	}
-
-	if !exists {
-		return p.tg.SendMessage(chatId, "No city is set :(")
-	}
 
 	cityname, err := p.storage.RetrieveCity(ctx, userdata)
 	if err != nil {
 		return e.Wrap("can't retreive city", err)
+	}
+	if len(cityname) == 0 {
+		p.tg.SendMessage(chatId, "You need to set the city first :)")
 	}
 
 	p.tg.SendMessage(chatId, "Your city is "+cityname)
@@ -91,11 +114,9 @@ func (p *Processor) setCity(ctx context.Context, text string, chatID int, userna
 			return nil
 		}
 
-		fmt.Print("HEREEEE")
 		if err := p.saveCityToDB(ctx, userdata); err != nil {
 			return e.Wrap("can't save city to db", err)
 		}
-		fmt.Print("HEREEEE2")
 	}
 
 	return nil

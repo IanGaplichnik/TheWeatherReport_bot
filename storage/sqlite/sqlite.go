@@ -75,17 +75,19 @@ func (ds *DataStorage) RetrieveCity(ctx context.Context, userData storage.Userda
 	if err != nil {
 		return "", fmt.Errorf("can't check if page exists %w", err)
 	}
-	if exists {
-		q := `SELECT city FROM pages WHERE user_name = ?`
 
-		var result string
-
-		err := ds.db.QueryRowContext(ctx, q, userData.UserName).Scan(&result)
-		if err != nil {
-			return "", e.Wrap("can't prepare sql query", err)
-		}
-
-		return result, nil
+	if !exists {
+		return "", nil
 	}
-	return "", nil
+
+	q := `SELECT city FROM pages WHERE user_name = ?`
+
+	var result string
+
+	err = ds.db.QueryRowContext(ctx, q, userData.UserName).Scan(&result)
+	if err != nil {
+		return "", e.Wrap("can't prepare sql query", err)
+	}
+
+	return result, nil
 }

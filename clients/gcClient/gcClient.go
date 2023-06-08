@@ -21,24 +21,24 @@ func New(host string, token string) *GeocodingClient {
 	}
 }
 
-func (gc *GeocodingClient) FetchCity(city string) ([]events.Weatherdata, error) {
+func (gc *GeocodingClient) FetchCity(city string) ([]events.CityData, error) {
 	cities, err := gc.queryCityName(city)
 
 	if err != nil {
 		return nil, e.Wrap("can't fetch city: %w", err)
 	}
 
-	return convertToWeatherData(cities), nil
+	return convertToCityData(cities), nil
 }
 
-func (gc *GeocodingClient) FetchCityWithCoord(lat, lon float32) ([]events.Weatherdata, error) {
+func (gc *GeocodingClient) FetchCityWithCoord(lat, lon float32) ([]events.CityData, error) {
 	cities, err := gc.queryCoordinates(lat, lon)
 
 	if err != nil {
 		return nil, e.Wrap("can't query with coordinates", err)
 	}
 
-	return convertToWeatherData(cities), nil
+	return convertToCityData(cities), nil
 }
 
 func (gc *GeocodingClient) queryCityName(city string) ([]CityStats, error) {
@@ -46,7 +46,7 @@ func (gc *GeocodingClient) queryCityName(city string) ([]CityStats, error) {
 	query.Add("appid", gc.token)
 	query.Add("q", city)
 
-	return gc.processQuery(query, direct)
+	return gc.processQuery(query, coordinatesByName)
 }
 
 func (gc *GeocodingClient) queryCoordinates(lat, lon float32) ([]CityStats, error) {
@@ -55,7 +55,7 @@ func (gc *GeocodingClient) queryCoordinates(lat, lon float32) ([]CityStats, erro
 	query.Add("lat", strconv.FormatFloat(float64(lat), 'f', 2, 32))
 	query.Add("lon", strconv.FormatFloat(float64(lon), 'f', 2, 32))
 
-	return gc.processQuery(query, reverse)
+	return gc.processQuery(query, nameByCoordinates)
 }
 
 func (gc *GeocodingClient) processQuery(query url.Values, requestType string) ([]CityStats, error) {
@@ -73,18 +73,18 @@ func (gc *GeocodingClient) processQuery(query url.Values, requestType string) ([
 	return gcResponse.Result, nil
 }
 
-func convertToWeatherData(cities []CityStats) []events.Weatherdata {
-	var citiesWeather []events.Weatherdata
+func convertToCityData(cities []CityStats) []events.CityData {
+	var citiesWeather []events.CityData
 
 	for _, city := range cities {
-		citiesWeather = append(citiesWeather, weather(city))
+		citiesWeather = append(citiesWeather, citydata(city))
 	}
 
 	return citiesWeather
 }
 
-func weather(city CityStats) events.Weatherdata {
-	return events.Weatherdata{
+func citydata(city CityStats) events.CityData {
+	return events.CityData{
 		CityName:  getCityname(city),
 		Latitude:  getLatitude(city),
 		Longitude: getLongitude(city),

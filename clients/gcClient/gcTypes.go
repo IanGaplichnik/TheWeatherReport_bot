@@ -21,7 +21,22 @@ type GeocodingClient struct {
 	token    string
 }
 
+type WeatherForecast struct {
+	Result []WeatherList `json:"list"`
+}
+
+type WeatherList struct {
+	Weather []Weather `json:"weather"`
+	PoP     float32   `json:"pop"`
+	Date    string    `json:"dt_txt"`
+}
+
+type Weather struct {
+	Description string `json:"description"`
+}
+
 const (
-	direct  string = "geo/1.0/direct"
-	reverse string = "geo/1.0/reverse"
+	coordinatesByName string = "geo/1.0/direct"
+	nameByCoordinates string = "geo/1.0/reverse"
+	hourlyForecast    string = "data/2.5/forecast"
 )
