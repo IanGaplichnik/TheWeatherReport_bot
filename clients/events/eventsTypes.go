@@ -32,4 +32,6 @@ type CityData struct {
 	CityName  string
 	Latitude  float32
 	Longitude float32
+	Country   string
+	State     *string
 }

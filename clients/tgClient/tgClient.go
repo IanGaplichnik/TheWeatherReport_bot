@@ -1,7 +1,9 @@
 package tgClient
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -14,7 +16,55 @@ import (
 const (
 	sendMessageMethod = "sendMessage"
 	getUpdatesMethod  = "getUpdates"
+	sendJson          = "application/json"
 )
+
+func (c *TgClient) SendKeyboard(chatId int, kbMarkup ReplyKeboardMarkup) error {
+
+	keyboardMsg := OutcomingKeyboard{
+		ChatId:      chatId,
+		ReplyMarkup: kbMarkup,
+		Text:        "Choose the correct city",
+	}
+
+	payload, err := json.MarshalIndent(keyboardMsg, "", " ")
+	if err != nil {
+		return e.Wrap("can't send keyboard", err)
+	}
+
+	if err := c.doPostRequest(payload); err != nil {
+		return e.Wrap("can't send keyboard", err)
+	}
+
+	return nil
+}
+
+func (c *TgClient) doPostRequest(payload []byte) error {
+	u := url.URL{
+		Scheme: "https",
+		Host:   c.host,
+		Path:   path.Join(c.basePath, sendMessageMethod),
+	}
+
+	req, err := http.NewRequest(http.MethodPost, u.String(), bytes.NewReader(payload))
+	if err != nil {
+		return e.Wrap("can't build a request", err)
+	}
+	fmt.Println(req)
+
+	resp, err := http.Post(u.String(), sendJson, bytes.NewReader(payload))
+	if err != nil {
+		return e.Wrap("can't client.Do request", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	_, err = io.ReadAll(resp.Body)
+	if err != nil {
+		return e.Wrap("can't ReadAll", err)
+	}
+
+	return nil
+}
 
 func (c *TgClient) Updates(offset int, limit int) (updates []Update, err error) {
 	defer func() { err = e.WrapIfError("can't get updates", err) }()

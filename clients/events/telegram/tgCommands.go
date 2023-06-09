@@ -7,6 +7,8 @@ import (
 	"strings"
 	"unicode"
 
+	"main.go/clients/events"
+	"main.go/clients/tgClient"
 	"main.go/lib/e"
 	"main.go/storage"
 )
@@ -100,6 +102,11 @@ func (p *Processor) setCity(ctx context.Context, text string, chatID int, userna
 		return nil
 	}
 
+	if len(cities) > 1 {
+		p.handleMultipleCities(cities, chatID)
+		return nil
+	}
+
 	userdata := storage.Userdata{
 		UserName: username,
 		ChatId:   chatID,
@@ -107,12 +114,12 @@ func (p *Processor) setCity(ctx context.Context, text string, chatID int, userna
 	}
 
 	if len(cities) == 1 {
-		if userdata.City != text {
-			if err := p.tg.SendMessage(chatID, msgNoCity); err != nil {
-				return e.Wrap("can't send message", err)
-			}
-			return nil
-		}
+		// 	if userdata.City != text {
+		// 		if err := p.tg.SendMessage(chatID, msgNoCity); err != nil {
+		// 			return e.Wrap("can't send message", err)
+		// 		}
+		// 		return nil
+		// 	}
 
 		if err := p.saveCityToDB(ctx, userdata); err != nil {
 			return e.Wrap("can't save city to db", err)
@@ -120,6 +127,26 @@ func (p *Processor) setCity(ctx context.Context, text string, chatID int, userna
 	}
 
 	return nil
+}
+
+func (p *Processor) handleMultipleCities(cities []events.CityData, chatID int) {
+	var state string
+
+	kbMarkup := new(tgClient.ReplyKeboardMarkup)
+	kbMarkup.KeyboardButtons = make([][]tgClient.KeyboardButton, len(cities))
+	kbMarkup.IsOnetime = true
+
+	for i, city := range cities {
+		if city.State == nil {
+			state = ""
+		} else {
+			state = *city.State
+		}
+		kbMarkup.KeyboardButtons[i] = make([]tgClient.KeyboardButton, 1)
+		kbMarkup.KeyboardButtons[i][0].Text = fmt.Sprintf("%d. %s, %s %s", i+1, city.CityName, state, city.Country)
+	}
+
+	p.tg.SendKeyboard(chatID, *kbMarkup)
 }
 
 func (p *Processor) saveCityToDB(ctx context.Context, userdata storage.Userdata) error {
@@ -153,7 +180,8 @@ func isCity(text string) bool {
 	}
 
 	for _, symbol := range text {
-		if !unicode.IsLetter(symbol) {
+		if !unicode.IsLetter(symbol) && symbol != ' ' {
+			fmt.Println("Not a city!")
 			return false
 		}
 	}

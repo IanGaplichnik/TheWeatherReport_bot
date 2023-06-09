@@ -39,3 +39,18 @@ type TgClient struct {
 	basePath string
 	client   http.Client
 }
+
+type KeyboardButton struct {
+	Text string `json:"text"`
+}
+
+type ReplyKeboardMarkup struct {
+	KeyboardButtons [][]KeyboardButton `json:"keyboard"`
+	IsOnetime       bool               `json:"one_time_keyboard"`
+}
+
+type OutcomingKeyboard struct {
+	ChatId      int                `json:"chat_id"`
+	ReplyMarkup ReplyKeboardMarkup `json:"reply_markup"`
+	Text        string             `json:"text"`
+}

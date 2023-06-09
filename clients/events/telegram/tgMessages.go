@@ -8,7 +8,7 @@ const helpMsg = `
 3. /currentcity: Prints your currently set city
 
 Note:
-- Make sure to set your city by sending a location/city name in a message before using /getweather or /checkrain.
+- Make sure to set your city by sending a location/city name in a message before using /checkweather or /currentcity.
 - You can change your city at any time by sending a location/city name in a message again.`
 
 const helloMsg = `Hi! I'm your weather bot. I send notifications if it's going to rain in your city. Here's how you can use me:` + helpMsg + `That's it! Stay updated with the weather in your city. ☔️🌤️`

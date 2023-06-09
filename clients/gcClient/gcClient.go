@@ -45,6 +45,7 @@ func (gc *GeocodingClient) queryCityName(city string) ([]CityStats, error) {
 	query := url.Values{}
 	query.Add("appid", gc.token)
 	query.Add("q", city)
+	query.Add("limit", "5")
 
 	return gc.processQuery(query, coordinatesByName)
 }
@@ -79,6 +80,7 @@ func convertToCityData(cities []CityStats) []events.CityData {
 	for _, city := range cities {
 		citiesWeather = append(citiesWeather, citydata(city))
 	}
+	fmt.Println("len = " + strconv.Itoa(len(citiesWeather)))
 
 	return citiesWeather
 }
@@ -88,7 +90,17 @@ func citydata(city CityStats) events.CityData {
 		CityName:  getCityname(city),
 		Latitude:  getLatitude(city),
 		Longitude: getLongitude(city),
+		Country:   getCountry(city),
+		State:     getState(city),
 	}
+}
+
+func getState(city CityStats) *string {
+	return city.State
+}
+
+func getCountry(city CityStats) string {
+	return city.Country
 }
 
 func getCityname(city CityStats) string {
