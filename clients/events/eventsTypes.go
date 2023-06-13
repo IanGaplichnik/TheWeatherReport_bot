@@ -24,14 +24,12 @@ type Event struct {
 }
 
 type Coordinates struct {
-	Longitude float32
 	Latitude  float32
+	Longitude float32
 }
 
 type CityData struct {
-	CityName  string
-	Latitude  float32
-	Longitude float32
-	Country   string
-	State     *string
+	CityName string
+	Country  string
+	State    string
 }

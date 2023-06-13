@@ -21,8 +21,8 @@ func New(host string, token string) *GeocodingClient {
 	}
 }
 
-func (gc *GeocodingClient) FetchCity(city string) ([]events.CityData, error) {
-	cities, err := gc.queryCityName(city)
+func (gc *GeocodingClient) FetchCitiesByCityName(city string) ([]events.CityData, error) {
+	cities, err := gc.queryCitiesByCityName(city)
 
 	if err != nil {
 		return nil, e.Wrap("can't fetch city: %w", err)
@@ -31,32 +31,18 @@ func (gc *GeocodingClient) FetchCity(city string) ([]events.CityData, error) {
 	return convertToCityData(cities), nil
 }
 
-func (gc *GeocodingClient) FetchCityWithCoord(lat, lon float32) ([]events.CityData, error) {
-	cities, err := gc.queryCoordinates(lat, lon)
-
-	if err != nil {
-		return nil, e.Wrap("can't query with coordinates", err)
-	}
-
-	return convertToCityData(cities), nil
-}
-
-func (gc *GeocodingClient) queryCityName(city string) ([]CityStats, error) {
+func (gc *GeocodingClient) queryCitiesByCityName(city string) ([]CityStats, error) {
 	query := url.Values{}
 	query.Add("appid", gc.token)
 	query.Add("q", city)
 	query.Add("limit", "5")
 
-	return gc.processQuery(query, coordinatesByName)
-}
+	cities, err := gc.processQuery(query, coordinatesByName)
+	if err != nil {
+		return nil, e.Wrap("can't query cities by city name ", err)
+	}
 
-func (gc *GeocodingClient) queryCoordinates(lat, lon float32) ([]CityStats, error) {
-	query := url.Values{}
-	query.Add("appid", gc.token)
-	query.Add("lat", strconv.FormatFloat(float64(lat), 'f', 2, 32))
-	query.Add("lon", strconv.FormatFloat(float64(lon), 'f', 2, 32))
-
-	return gc.processQuery(query, nameByCoordinates)
+	return cities, nil
 }
 
 func (gc *GeocodingClient) processQuery(query url.Values, requestType string) ([]CityStats, error) {
@@ -74,6 +60,53 @@ func (gc *GeocodingClient) processQuery(query url.Values, requestType string) ([
 	return gcResponse.Result, nil
 }
 
+func (gc *GeocodingClient) FetchCityByCoords(lat, lon float32) ([]events.CityData, error) {
+	city, err := gc.queryCityByCoords(lat, lon)
+
+	if err != nil {
+		return nil, e.Wrap("can't query with coordinates", err)
+	}
+
+	return convertToCityData(city), nil
+}
+
+func (gc *GeocodingClient) queryCityByCoords(lat, lon float32) ([]CityStats, error) {
+	query := url.Values{}
+	query.Add("appid", gc.token)
+	query.Add("lat", strconv.FormatFloat(float64(lat), 'f', 2, 32))
+	query.Add("lon", strconv.FormatFloat(float64(lon), 'f', 2, 32))
+
+	cities, err := gc.processQuery(query, nameByCoordinates)
+	if err != nil {
+		return nil, e.Wrap("can't query cities by city name ", err)
+	}
+
+	return cities, nil
+}
+
+func (gc *GeocodingClient) FetchCoordsByCity(city string) (*events.Coordinates, error) {
+	cities, err := gc.queryCitiesByCityName(city)
+
+	if err != nil {
+		return nil, e.Wrap("can't fetch coords by city", err)
+	}
+
+	if len(cities) < 1 {
+		return nil, nil
+	}
+
+	coords := convertToCoords(cities)
+
+	return coords, nil
+}
+
+func convertToCoords(cities []CityStats) *events.Coordinates {
+	return &events.Coordinates{
+		Latitude:  getLatitude(cities[0]),
+		Longitude: getLongitude(cities[0]),
+	}
+}
+
 func convertToCityData(cities []CityStats) []events.CityData {
 	var citiesWeather []events.CityData
 
@@ -87,16 +120,17 @@ func convertToCityData(cities []CityStats) []events.CityData {
 
 func citydata(city CityStats) events.CityData {
 	return events.CityData{
-		CityName:  getCityname(city),
-		Latitude:  getLatitude(city),
-		Longitude: getLongitude(city),
-		Country:   getCountry(city),
-		State:     getState(city),
+		CityName: getCityname(city),
+		Country:  getCountry(city),
+		State:    getState(city),
 	}
 }
 
-func getState(city CityStats) *string {
-	return city.State
+func getState(city CityStats) string {
+	if city.State != nil {
+		return *city.State
+	}
+	return ""
 }
 
 func getCountry(city CityStats) string {

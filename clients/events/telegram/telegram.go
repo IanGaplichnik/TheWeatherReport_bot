@@ -93,17 +93,19 @@ func (p *Processor) processLocation(event events.Event) error {
 }
 
 func (p *Processor) locationOperations(ctx context.Context, location *events.Coordinates, chatID int, username string) error {
-	cities, err := p.geocoding.FetchCityWithCoord(location.Latitude, location.Longitude)
+	cities, err := p.geocoding.FetchCityByCoords(location.Latitude, location.Longitude)
 
 	if err != nil {
 		return e.Wrap("can't fetch city with coordinates", err)
 	}
 
 	if len(cities) > 0 {
-		userdata := storage.Userdata{
+		userdata := &storage.Userdata{
 			UserName: username,
 			ChatId:   chatID,
 			City:     cities[0].CityName,
+			Country:  cities[0].Country,
+			State:    cities[0].State,
 		}
 
 		p.saveCityToDB(ctx, userdata)
