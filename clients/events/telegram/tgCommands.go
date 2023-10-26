@@ -91,6 +91,11 @@ func (p *Processor) executeKeyboardInput(ctx context.Context, userdata *storage.
 	userdata.State = cities[0].State
 
 	p.storage.Save(ctx, userdata)
+
+	message := fmt.Sprintf("City of %s is succesfully set!🙌\nYou can choose the next action from the menu.\nSend a message or a location to set a new city", userdata.City)
+	if err := p.tg.SendMessage(userdata.ChatId, message); err != nil {
+		return e.Wrap("can't send message", err)
+	}
 	return nil
 }
 
@@ -162,6 +167,7 @@ func (p *Processor) setCity(ctx context.Context, text string, userdata *storage.
 		if err := p.handleMultipleCities(ctx, cities, userdata.ChatId, userdata.UserName); err != nil {
 			return e.Wrap("can't set city", err)
 		}
+
 		return nil
 	}
 
